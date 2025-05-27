@@ -1,0 +1,46 @@
+# Disha OCP Migration Chatbot - Project Structure
+
+```
+disha-chatbot/
+├── requirements.txt
+├── main.py
+├── config/
+│   ├── __init__.py
+│   └── settings.py
+├── models/
+│   ├── __init__.py
+│   └── migration_status.py
+├── core/
+│   ├── __init__.py
+│   └── faiss_embedding_store.py
+├── tools/
+│   ├── __init__.py
+│   ├── intake_assessment_tool.py
+│   ├── hard_gate_tool.py
+│   ├── app_data_tool.py
+│   └── jira_tool.py
+├── agents/
+│   ├── __init__.py
+│   └── disha_ocp_agent.py
+├── orchestrators/
+│   ├── __init__.py
+│   └── migration_workflow_orchestrator.py
+├── cli/
+│   ├── __init__.py
+│   └── disha_cli.py
+└── utils/
+    ├── __init__.py
+    └── logging_config.py
+```
+
+## File Descriptions
+
+- **main.py**: Entry point of the application
+- **config/**: Configuration files and settings
+- **models/**: Data models and structures
+- **core/**: Core functionality like embedding store
+- **tools/**: Google ADK tools for different functionalities
+- **agents/**: Main agent implementation
+- **orchestrators/**: Workflow orchestration logic
+- **cli/**: Command-line interface
+- **utils/**: Utility functions and configurations
