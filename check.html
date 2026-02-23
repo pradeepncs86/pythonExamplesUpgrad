@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MCP Architecture Diagram — Security Controls Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    background: #0B0F14;
+    font-family: 'IBM Plex Sans', sans-serif;
+    color: #C8D8E8;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Header */
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 40px;
+    border-bottom: 1px solid #1C2A3A;
+    background: #080C10;
+  }
+  .page-header .left { display: flex; align-items: center; gap: 14px; }
+  .logo-box {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, #22D3EE, #6EE7B7);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .page-title { font-size: 15px; font-weight: 700; color: #E8F4FF; }
+  .page-sub { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #3A6080; letter-spacing: 1px; margin-top: 2px; }
+  .badge { font-family: 'IBM Plex Mono', monospace; font-size: 10px; padding: 4px 12px; border-radius: 20px; background: rgba(34,211,238,0.1); border: 1px solid rgba(34,211,238,0.25); color: #22D3EE; }
+
+  /* View toggle */
+  .view-bar {
+    display: flex;
+    gap: 4px;
+    padding: 12px 40px;
+    background: #080C10;
+    border-bottom: 1px solid #1C2A3A;
+  }
+  .view-btn {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    padding: 7px 16px;
+    border-radius: 6px;
+    border: 1px solid #1C2A3A;
+    background: transparent;
+    color: #3A6080;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .view-btn:hover { color: #C8D8E8; border-color: #2A4A6A; }
+  .view-btn.active { background: #0F1E30; border-color: #22D3EE; color: #22D3EE; }
+
+  /* Diagram canvas */
+  .canvas {
+    padding: 32px 40px 48px;
+    overflow-x: auto;
+  }
+  
+  .diagram { display: none; }
+  .diagram.active { display: block; }
+
+  /* ===== DIAGRAM 1: FULL SYSTEM ===== */
+  .full-diagram {
+    position: relative;
+    width: 100%;
+    min-width: 1100px;
+  }
+
+  svg.arch-svg {
+    width: 100%;
+    font-family: 'IBM Plex Mono', monospace;
+    overflow: visible;
+  }
+
+  /* ===== DIAGRAM 2: AGENT FLOW ===== */
+  .flow-diagram {
+    max-width: 960px;
+    margin: 0 auto;
+  }
+
+  /* Swimlane */
+  .swimlane-wrap {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    gap: 0;
+    border: 1px solid #1C2A3A;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .lane-labels {
+    background: #080C10;
+    border-right: 1px solid #1C2A3A;
+  }
+  .lane-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    writing-mode: horizontal-tb;
+    padding: 0 8px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    border-bottom: 1px solid #1C2A3A;
+  }
+  .lane-label:last-child { border-bottom: none; }
+  .lane-content { }
+  .lane-row {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    padding: 14px 20px;
+    border-bottom: 1px solid #1C2A3A;
+    min-height: 70px;
+    position: relative;
+  }
+  .lane-row:last-child { border-bottom: none; }
+
+  /* Flow nodes */
+  .fnode {
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 10px;
+    font-weight: 600;
+    text-align: center;
+    border: 1px solid;
+    min-width: 100px;
+    position: relative;
+    z-index: 2;
+    flex-shrink: 0;
+  }
+  .fnode-sm {
+    padding: 5px 10px;
+    font-size: 9px;
+    min-width: 80px;
+  }
+
+  .farrow {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    position: relative;
+    min-width: 30px;
+  }
+  .farrow-line {
+    height: 1px;
+    flex: 1;
+    position: relative;
+  }
+  .farrow-line::after {
+    content: '▶';
+    position: absolute;
+    right: -6px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 8px;
+  }
+  .farrow-label {
+    position: absolute;
+    top: -14px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 8px;
+    font-family: 'IBM Plex Mono', monospace;
+    white-space: nowrap;
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: #080C10;
+  }
+
+  /* ===== DIAGRAM 3: MCP DETAIL ===== */
+  .mcp-detail {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 0;
+    align-items: start;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .mcp-left, .mcp-right {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 20px;
+  }
+  .mcp-center-bus {
+    width: 260px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .node-box {
+    border-radius: 10px;
+    padding: 12px 16px;
+    border: 1px solid;
+    position: relative;
+    transition: all 0.2s;
+    cursor: default;
+  }
+  .node-box:hover { transform: translateX(4px); }
+  .node-title { font-size: 11px; font-weight: 700; margin-bottom: 3px; }
+  .node-detail { font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: #3A6080; line-height: 1.5; }
+  .node-tools { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 6px; }
+  .tool-pill {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 8px;
+    padding: 1px 6px;
+    border-radius: 3px;
+    background: rgba(255,255,255,0.05);
+    color: #5A8AA8;
+    border: 1px solid #1C2A3A;
+  }
+
+  .mcp-server-box {
+    width: 220px;
+    border-radius: 10px;
+    padding: 10px 14px;
+    border: 1px solid;
+    text-align: center;
+    position: relative;
+    transition: all 0.2s;
+    cursor: default;
+  }
+  .mcp-server-box:hover { transform: scale(1.03); }
+  .msb-title { font-size: 11px; font-weight: 700; font-family: 'IBM Plex Mono', monospace; margin-bottom: 3px; }
+  .msb-desc { font-size: 9px; color: #3A6080; }
+  .msb-count { 
+    position: absolute; top: -7px; right: 8px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 8px;
+    padding: 1px 5px; border-radius: 3px; font-weight: 700;
+  }
+
+  /* connector lines in MCP detail */
+  .conn-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    width: 100%;
+  }
+  .h-connector {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    position: relative;
+    padding: 4px 0;
+  }
+  .hc-line {
+    flex: 1;
+    height: 1px;
+  }
+  .hc-arrow { font-size: 8px; flex-shrink: 0; }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 16px 40px;
+    border-top: 1px solid #1C2A3A;
+    background: #080C10;
+    align-items: center;
+  }
+  .legend-title { font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: #3A6080; letter-spacing: 1px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 10px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 2px; }
+  .legend-line { width: 24px; height: 1px; }
+
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="left">
+    <div class="logo-box">⚡</div>
+    <div>
+      <div class="page-title">MCP Architecture — Security Controls Platform</div>
+      <div class="page-sub">MODEL CONTEXT PROTOCOL · 7 SERVERS · 20 CONTROL AGENTS · ENTERPRISE GRADE</div>
+    </div>
+  </div>
+  <div class="badge">v1.0 · 2026</div>
+</div>
+
+<div class="view-bar">
+  <button class="view-btn active" onclick="showDiagram('full')">① Full System Architecture</button>
+  <button class="view-btn" onclick="showDiagram('flow')">② Agent Workflow Flow</button>
+  <button class="view-btn" onclick="showDiagram('mcp')">③ MCP Server Detail</button>
+</div>
+
+<div class="canvas">
+
+  <!-- ============ DIAGRAM 1: FULL SYSTEM SVG ============ -->
+  <div class="diagram active full-diagram" id="d-full">
+    <svg class="arch-svg" viewBox="0 0 1200 820" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <!-- Grid pattern -->
+        <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
+          <path d="M 30 0 L 0 0 0 30" fill="none" stroke="#111820" stroke-width="0.5"/>
+        </pattern>
+        <!-- Arrow markers -->
+        <marker id="arr-cyan" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#22D3EE"/>
+        </marker>
+        <marker id="arr-green" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#6EE7B7"/>
+        </marker>
+        <marker id="arr-orange" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#FB923C"/>
+        </marker>
+        <marker id="arr-pink" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#F472B6"/>
+        </marker>
+        <marker id="arr-gray" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#2A4A6A"/>
+        </marker>
+        <marker id="arr-yellow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#FBBF24"/>
+        </marker>
+        <!-- Glow filter -->
+        <filter id="glow-cyan">
+          <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+          <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="glow-green">
+          <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+          <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+
+      <!-- Background grid -->
+      <rect width="1200" height="820" fill="url(#grid)"/>
+
+      <!-- ═══ ZONE BACKGROUNDS ═══ -->
+      <!-- UI Layer zone -->
+      <rect x="10" y="10" width="1180" height="120" rx="10" fill="rgba(167,139,250,0.04)" stroke="rgba(167,139,250,0.2)" stroke-width="1" stroke-dasharray="6,4"/>
+      <text x="22" y="28" font-family="IBM Plex Mono" font-size="9" fill="rgba(167,139,250,0.6)" letter-spacing="2">UI / PORTAL LAYER</text>
+
+      <!-- Agent Layer zone -->
+      <rect x="10" y="160" width="1180" height="150" rx="10" fill="rgba(96,165,250,0.04)" stroke="rgba(96,165,250,0.2)" stroke-width="1" stroke-dasharray="6,4"/>
+      <text x="22" y="178" font-family="IBM Plex Mono" font-size="9" fill="rgba(96,165,250,0.6)" letter-spacing="2">AI AGENT LAYER</text>
+
+      <!-- MCP Bus zone -->
+      <rect x="10" y="340" width="1180" height="240" rx="10" fill="rgba(34,211,238,0.04)" stroke="rgba(34,211,238,0.3)" stroke-width="1.5" stroke-dasharray="8,4"/>
+      <text x="22" y="358" font-family="IBM Plex Mono" font-size="9" fill="rgba(34,211,238,0.7)" letter-spacing="2">MCP SERVER BUS  —  SHARED TOOL LAYER</text>
+
+      <!-- Backend zone -->
+      <rect x="10" y="610" width="1180" height="200" rx="10" fill="rgba(251,191,36,0.04)" stroke="rgba(251,191,36,0.2)" stroke-width="1" stroke-dasharray="6,4"/>
+      <text x="22" y="628" font-family="IBM Plex Mono" font-size="9" fill="rgba(251,191,36,0.6)" letter-spacing="2">BACKEND SYSTEMS &amp; INTEGRATIONS</text>
+
+      <!-- ═══ UI PORTALS ═══ -->
+      <!-- CIO Portal -->
+      <rect x="30" y="40" width="170" height="72" rx="8" fill="#0F1525" stroke="#A78BFA" stroke-width="1.5"/>
+      <rect x="30" y="40" width="170" height="6" rx="4" fill="#A78BFA"/>
+      <text x="115" y="62" font-family="IBM Plex Mono" font-size="10" font-weight="700" fill="#A78BFA" text-anchor="middle">CIO PORTAL</text>
+      <text x="115" y="76" font-family="IBM Plex Mono" font-size="8" fill="#4A6A8A" text-anchor="middle">Executive Dashboard</text>
+      <text x="115" y="88" font-family="IBM Plex Mono" font-size="8" fill="#4A6A8A" text-anchor="middle">Reports · Heatmaps</text>
+      <text x="115" y="100" font-family="IBM Plex Mono" font-size="7" fill="rgba(167,139,250,0.6)" text-anchor="middle">ROLE: CIO / VP</text>
+
+      <!-- Central Lead Portal -->
+      <rect x="240" y="40" width="190" height="72" rx="8" fill="#0F1A20" stroke="#22D3EE" stroke-width="1.5"/>
+      <rect x="240" y="40" width="190" height="6" rx="4" fill="#22D3EE"/>
+      <text x="335" y="62" font-family="IBM Plex Mono" font-size="10" font-weight="700" fill="#22D3EE" text-anchor="middle">CENTRAL LEAD HUB</text>
+      <text x="335" y="76" font-family="IBM Plex Mono" font-size="8" fill="#4A6A8A" text-anchor="middle">Aggregate · Approve Evidence</text>
+      <text x="335" y="88" font-family="IBM Plex Mono" font-size="8" fill="#4A6A8A" text-anchor="middle">Override Status · Collate</text>
+      <text x="335" y="100" font-family="IBM Plex Mono" font-size="7" fill="rgba(34,211,238,0.6)" text-anchor="middle">ROLE: CENTRAL LEAD</text>
+
+      <!-- Control Owner Portal -->
+      <rect x="470" y="40" width="190" height="72" rx="8" fill="#0F1A18" stroke="#6EE7B7" stroke-width="1.5"/>
+      <rect x="470" y="40" width="190" height="6" rx="4" fill="#6EE7B7"/>
+      <text x="565" y="62" font-family="IBM Plex Mono" font-size="10" font-weight="700" fill="#6EE7B7" text-anchor="middle">CONTROL OWNER PORTAL</text>
+      <text x="565" y="76" font-family="IBM Plex Mono" font-size="8" fill="#4A6A8A" text-anchor="middle">Initiate Controls · Track</text>
+      <text x="565" y="88" font-family="IBM Plex Mono" font-size="8" fill="#4A6A8A" text-anchor="middle">Upload Evidence · SLAs</text>
+      <text x="565" y="100" font-family="IBM Plex Mono" font-size="7" fill="rgba(110,231,183,0.6)" text-anchor="middle">ROLE: CONTROL OWNER</text>
+
+      <!-- App Team Portal -->
+      <rect x="700" y="40" width="190" height="72" rx="8" fill="#1A120F" stroke="#FB923C" stroke-width="1.5"/>
+      <rect x="700" y="40" width="190" height="6" rx="4" fill="#FB923C"/>
+      <text x="795" y="62" font-family="IBM Plex Mono" font-size="10" font-weight="700" fill="#FB923C" text-anchor="middle">APP TEAM PORTAL</text>
+      <text x="795" y="76" font-family="IBM Plex Mono" font-size="8" fill="#4A6A8A" text-anchor="middle">View Tasks · Update Jira</text>
+      <text x="795" y="88" font-family="IBM Plex Mono" font-size="8" fill="#4A6A8A" text-anchor="middle">Submit Evidence</text>
+      <text x="795" y="100" font-family="IBM Plex Mono" font-size="7" fill="rgba(251,146,60,0.6)" text-anchor="middle">ROLE: APP TEAM LEAD</text>
+
+      <!-- SSO/Auth box -->
+      <rect x="930" y="40" width="150" height="72" rx="8" fill="#0F1A18" stroke="#34D399" stroke-width="1.5"/>
+      <rect x="930" y="40" width="150" height="6" rx="4" fill="#34D399"/>
+      <text x="1005" y="62" font-family="IBM Plex Mono" font-size="10" font-weight="700" fill="#34D399" text-anchor="middle">SSO / IAM</text>
+      <text x="1005" y="76" font-family="IBM Plex Mono" font-size="8" fill="#4A6A8A" text-anchor="middle">Azure AD / Okta</text>
+      <text x="1005" y="88" font-family="IBM Plex Mono" font-size="8" fill="#4A6A8A" text-anchor="middle">JWT · RBAC · MFA</text>
+      <text x="1005" y="100" font-family="IBM Plex Mono" font-size="7" fill="rgba(52,211,153,0.6)" text-anchor="middle">ALL ROLES</text>
+
+      <!-- API Gateway -->
+      <rect x="1100" y="40" width="82" height="72" rx="8" fill="#111820" stroke="#2A4A6A" stroke-width="1.5"/>
+      <text x="1141" y="70" font-family="IBM Plex Mono" font-size="9" font-weight="700" fill="#4A7A9A" text-anchor="middle">API</text>
+      <text x="1141" y="83" font-family="IBM Plex Mono" font-size="9" font-weight="700" fill="#4A7A9A" text-anchor="middle">GATEWAY</text>
+      <text x="1141" y="100" font-family="IBM Plex Mono" font-size="7" fill="#2A4A6A" text-anchor="middle">REST/GraphQL</text>
+
+      <!-- ═══ AGENT LAYER ═══ -->
+      <!-- Orchestrator -->
+      <rect x="30" y="178" width="200" height="112" rx="8" fill="#0D1830" stroke="#60A5FA" stroke-width="2" filter="url(#glow-cyan)"/>
+      <rect x="30" y="178" width="200" height="7" rx="4" fill="url(#grad-orch)"/>
+      <defs>
+        <linearGradient id="grad-orch" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#60A5FA"/>
+          <stop offset="100%" stop-color="#A78BFA"/>
+        </linearGradient>
+      </defs>
+      <text x="130" y="202" font-family="IBM Plex Mono" font-size="10" font-weight="700" fill="#60A5FA" text-anchor="middle">ORCHESTRATOR</text>
+      <text x="130" y="216" font-family="IBM Plex Mono" font-size="10" font-weight="700" fill="#60A5FA" text-anchor="middle">AGENT</text>
+      <text x="130" y="232" font-family="IBM Plex Mono" font-size="8" fill="#3A6080" text-anchor="middle">Supervises all 20 agents</text>
+      <text x="130" y="245" font-family="IBM Plex Mono" font-size="8" fill="#3A6080" text-anchor="middle">Detects stalls · Escalates</text>
+      <text x="130" y="258" font-family="IBM Plex Mono" font-size="8" fill="#3A6080" text-anchor="middle">Aggregates status → CIO</text>
+      <text x="130" y="275" font-family="IBM Plex Mono" font-size="7" fill="rgba(96,165,250,0.5)" text-anchor="middle">LangGraph ReAct Agent</text>
+
+      <!-- Control Agents group -->
+      <rect x="270" y="178" width="560" height="112" rx="8" fill="#0D1820" stroke="#6EE7B7" stroke-width="1.5"/>
+      <text x="550" y="198" font-family="IBM Plex Mono" font-size="10" font-weight="700" fill="#6EE7B7" text-anchor="middle">CONTROL AGENTS  ×20</text>
+      <!-- Mini agent boxes -->
+      <rect x="282" y="206" width="72" height="34" rx="5" fill="#0A1520" stroke="#1C4A3A" stroke-width="1"/>
+      <text x="318" y="220" font-family="IBM Plex Mono" font-size="7" fill="#4A8A6A" text-anchor="middle">Ctrl #1–5</text>
+      <text x="318" y="232" font-family="IBM Plex Mono" font-size="7" fill="#2A5A4A" text-anchor="middle">Security</text>
+
+      <rect x="364" y="206" width="72" height="34" rx="5" fill="#0A1520" stroke="#1C4A3A" stroke-width="1"/>
+      <text x="400" y="220" font-family="IBM Plex Mono" font-size="7" fill="#4A8A6A" text-anchor="middle">Ctrl #6–10</text>
+      <text x="400" y="232" font-family="IBM Plex Mono" font-size="7" fill="#2A5A4A" text-anchor="middle">Logging</text>
+
+      <rect x="446" y="206" width="72" height="34" rx="5" fill="#0A1520" stroke="#1C4A3A" stroke-width="1"/>
+      <text x="482" y="220" font-family="IBM Plex Mono" font-size="7" fill="#4A8A6A" text-anchor="middle">Ctrl #11–15</text>
+      <text x="482" y="232" font-family="IBM Plex Mono" font-size="7" fill="#2A5A4A" text-anchor="middle">Vuln Mgmt</text>
+
+      <rect x="528" y="206" width="72" height="34" rx="5" fill="#0A1520" stroke="#1C4A3A" stroke-width="1"/>
+      <text x="564" y="220" font-family="IBM Plex Mono" font-size="7" fill="#4A8A6A" text-anchor="middle">Ctrl #16–20</text>
+      <text x="564" y="232" font-family="IBM Plex Mono" font-size="7" fill="#2A5A4A" text-anchor="middle">Compliance</text>
+
+      <text x="630" y="218" font-family="IBM Plex Mono" font-size="12" fill="#1C4A3A" text-anchor="middle">···</text>
+
+      <text x="550" y="260" font-family="IBM Plex Mono" font-size="8" fill="#3A6080" text-anchor="middle">Each agent: identify apps → create Jira → collect evidence → validate → report</text>
+      <text x="550" y="274" font-family="IBM Plex Mono" font-size="7" fill="rgba(110,231,183,0.4)" text-anchor="middle">MCP Client embedded · calls shared MCP servers for all tool actions</text>
+
+      <!-- Evidence Collector Agent -->
+      <rect x="860" y="178" width="160" height="112" rx="8" fill="#1A100D" stroke="#FB923C" stroke-width="1.5"/>
+      <text x="940" y="202" font-family="IBM Plex Mono" font-size="9" font-weight="700" fill="#FB923C" text-anchor="middle">EVIDENCE</text>
+      <text x="940" y="215" font-family="IBM Plex Mono" font-size="9" font-weight="700" fill="#FB923C" text-anchor="middle">COLLECTOR</text>
+      <text x="940" y="232" font-family="IBM Plex Mono" font-size="8" fill="#3A6080" text-anchor="middle">Pulls · Validates</text>
+      <text x="940" y="245" font-family="IBM Plex Mono" font-size="8" fill="#3A6080" text-anchor="middle">Indexes · Flags gaps</text>
+      <text x="940" y="270" font-family="IBM Plex Mono" font-size="7" fill="rgba(251,146,60,0.5)" text-anchor="middle">LLM validates quality</text>
+
+      <!-- Report Agent -->
+      <rect x="1040" y="178" width="142" height="112" rx="8" fill="#17150A" stroke="#FBBF24" stroke-width="1.5"/>
+      <text x="1111" y="202" font-family="IBM Plex Mono" font-size="9" font-weight="700" fill="#FBBF24" text-anchor="middle">REPORT</text>
+      <text x="1111" y="215" font-family="IBM Plex Mono" font-size="9" font-weight="700" fill="#FBBF24" text-anchor="middle">AGENT</text>
+      <text x="1111" y="232" font-family="IBM Plex Mono" font-size="8" fill="#3A6080" text-anchor="middle">Monthly / Quarterly</text>
+      <text x="1111" y="245" font-family="IBM Plex Mono" font-size="8" fill="#3A6080" text-anchor="middle">CIO PDF · Heatmap</text>
+      <text x="1111" y="270" font-family="IBM Plex Mono" font-size="7" fill="rgba(251,191,36,0.5)" text-anchor="middle">LLM exec summary</text>
+
+      <!-- ═══ MCP SERVER BUS ═══ -->
+      <!-- Bus backbone line -->
+      <line x1="30" y1="460" x2="1170" y2="460" stroke="#0A3A4A" stroke-width="16" stroke-linecap="round"/>
+      <line x1="30" y1="460" x2="1170" y2="460" stroke="#22D3EE" stroke-width="1.5" stroke-dasharray="12,6" opacity="0.4"/>
+      <text x="600" y="464" font-family="IBM Plex Mono" font-size="8" fill="rgba(34,211,238,0.5)" text-anchor="middle" letter-spacing="4">MCP  PROTOCOL  BUS  ·  JSON-RPC  ·  stdio / SSE</text>
+
+      <!-- MCP Server boxes -->
+      <!-- jira-mcp -->
+      <rect x="30" y="370" width="148" height="70" rx="7" fill="#0A1520" stroke="#60A5FA" stroke-width="1.5"/>
+      <rect x="30" y="370" width="148" height="5" rx="3" fill="#60A5FA"/>
+      <text x="104" y="389" font-family="IBM Plex Mono" font-size="9" font-weight="700" fill="#60A5FA" text-anchor="middle">jira-mcp</text>
+      <text x="104" y="402" font-family="IBM Plex Mono" font-size="7.5" fill="#2A5A7A" text-anchor="middle">create · update · poll</text>
+      <text x="104" y="414" font-family="IBM Plex Mono" font-size="7.5" fill="#2A5A7A" text-anchor="middle">attach · bulk-create</text>
+      <text x="104" y="430" font-family="IBM Plex Mono" font-size="7" fill="rgba(96,165,250,0.4)" text-anchor="middle">7 tools</text>
+      <!-- connector to bus -->
+      <line x1="104" y1="440" x2="104" y2="452" stroke="#60A5FA" stroke-width="1.5" marker-end="url(#arr-cyan)"/>
+
+      <!-- evidence-mcp -->
+      <rect x="200" y="370" width="148" height="70" rx="7" fill="#0A1A14" stroke="#6EE7B7" stroke-width="1.5"/>
+      <rect x="200" y="370" width="148" height="5" rx="3" fill="#6EE7B7"/>
+      <text x="274" y="389" font-family="IBM Plex Mono" font-size="9" font-weight="700" fill="#6EE7B7" text-anchor="middle">evidence-mcp</text>
+      <text x="274" y="402" font-family="IBM Plex Mono" font-size="7.5" fill="#2A5A4A" text-anchor="middle">upload · validate · get</text>
+      <text x="274" y="414" font-family="IBM Plex Mono" font-size="7.5" fill="#2A5A4A" text-anchor="middle">approve · missing-list</text>
+      <text x="274" y="430" font-family="IBM Plex Mono" font-size="7" fill="rgba(110,231,183,0.4)" text-anchor="middle">6 tools · LLM validate</text>
+      <line x1="274" y1="440" x2="274" y2="452" stroke="#6EE7B7" stroke-width="1.5" marker-end="url(#arr-green)"/>
+
+      <!-- notify-mcp -->
+      <rect x="370" y="370" width="148" height="70" rx="7" fill="#170F14" stroke="#F472B6" stroke-width="1.5"/>
+      <rect x="370" y="370" width="148" height="5" rx="3" fill="#F472B6"/>
+      <text x="444" y="389" font-family="IBM Plex Mono" font-size="9" font-weight="700" fill="#F472B6" text-anchor="middle">notify-mcp</text>
+      <text x="444" y="402" font-family="IBM Plex Mono" font-size="7.5" fill="#4A2A3A" text-anchor="middle">email · slack · teams</text>
+      <text x="444" y="414" font-family="IBM Plex Mono" font-size="7.5" fill="#4A2A3A" text-anchor="middle">reminder · broadcast</text>
+      <text x="444" y="430" font-family="IBM Plex Mono" font-size="7" fill="rgba(244,114,182,0.4)" text-anchor="middle">6 tools · multi-channel</text>
+      <line x1="444" y1="440" x2="444" y2="452" stroke="#F472B6" stroke-width="1.5" marker-end="url(#arr-pink)"/>
+
+      <!-- report-mcp -->
+      <rect x="540" y="370" width="148" height="70" rx="7" fill="#171409" stroke="#FBBF24" stroke-width="1.5"/>
+      <rect x="540" y="370" width="148" height="5" rx="3" fill="#FBBF24"/>
+      <text x="614" y="389" font-family="IBM Plex Mono" font-size="9" font-weight="700" fill="#FBBF24" text-anchor="middle">report-mcp</text>
+      <text x="614" y="402" font-family="IBM Plex Mono" font-size="7.5" fill="#4A3A0A" text-anchor="middle">gen-report · heatmap</text>
+      <text x="614" y="414" font-family="IBM Plex Mono" font-size="7.5" fill="#4A3A0A" text-anchor="middle">trend · exec-summary</text>
+      <text x="614" y="430" font-family="IBM Plex Mono" font-size="7" fill="rgba(251,191,36,0.4)" text-anchor="middle">6 tools · PDF/PPTX out</text>
+      <line x1="614" y1="440" x2="614" y2="452" stroke="#FBBF24" stroke-width="1.5" marker-end="url(#arr-yellow)"/>
+
+      <!-- app-registry-mcp -->
+      <rect x="710" y="370" width="148" height="70" rx="7" fill="#100F1A" stroke="#A78BFA" stroke-width="1.5"/>
+      <rect x="710" y="370" width="148" height="5" rx="3" fill="#A78BFA"/>
+      <text x="784" y="389" font-family="IBM Plex Mono" font-size="9" font-weight="700" fill="#A78BFA" text-anchor="middle">app-registry-mcp</text>
+      <text x="784" y="402" font-family="IBM Plex Mono" font-size="7.5" fill="#3A2A5A" text-anchor="middle">get-apps · contacts</text>
+      <text x="784" y="414" font-family="IBM Plex Mono" font-size="7.5" fill="#3A2A5A" text-anchor="middle">metadata · history</text>
+      <text x="784" y="430" font-family="IBM Plex Mono" font-size="7" fill="rgba(167,139,250,0.4)" text-anchor="middle">5 tools · scope lookup</text>
+      <line x1="784" y1="440" x2="784" y2="452" stroke="#A78BFA" stroke-width="1.5" marker-end="url(#arr-gray)"/>
+
+      <!-- control-store-mcp -->
+      <rect x="880" y="370" width="148" height="70" rx="7" fill="#120F0A" stroke="#FB923C" stroke-width="1.5"/>
+      <rect x="880" y="370" width="148" height="5" rx="3" fill="#FB923C"/>
+      <text x="954" y="389" font-family="IBM Plex Mono" font-size="9" font-weight="700" fill="#FB923C" text-anchor="middle">control-store-mcp</text>
+      <text x="954" y="402" font-family="IBM Plex Mono" font-size="7.5" fill="#4A2A0A" text-anchor="middle">definition · status</text>
+      <text x="954" y="414" font-family="IBM Plex Mono" font-size="7.5" fill="#4A2A0A" text-anchor="middle">initiate · list-all</text>
+      <text x="954" y="430" font-family="IBM Plex Mono" font-size="7" fill="rgba(251,146,60,0.4)" text-anchor="middle">6 tools · cycle mgmt</text>
+      <line x1="954" y1="440" x2="954" y2="452" stroke="#FB923C" stroke-width="1.5" marker-end="url(#arr-orange)"/>
+
+      <!-- auth-audit-mcp -->
+      <rect x="1040" y="370" width="142" height="70" rx="7" fill="#0A140F" stroke="#34D399" stroke-width="1.5"/>
+      <rect x="1040" y="370" width="142" height="5" rx="3" fill="#34D399"/>
+      <text x="1111" y="389" font-family="IBM Plex Mono" font-size="9" font-weight="700" fill="#34D399" text-anchor="middle">auth-audit-mcp</text>
+      <text x="1111" y="402" font-family="IBM Plex Mono" font-size="7.5" fill="#0A3A20" text-anchor="middle">check-perm · get-ctx</text>
+      <text x="1111" y="414" font-family="IBM Plex Mono" font-size="7.5" fill="#0A3A20" text-anchor="middle">log-action · audit-trail</text>
+      <text x="1111" y="430" font-family="IBM Plex Mono" font-size="7" fill="rgba(52,211,153,0.4)" text-anchor="middle">5 tools · RBAC enforce</text>
+      <line x1="1111" y1="440" x2="1111" y2="452" stroke="#34D399" stroke-width="1.5" marker-end="url(#arr-gray)"/>
+
+      <!-- ═══ VERTICAL LINES FROM BUS TO BACKENDS ═══ -->
+      <line x1="104" y1="468" x2="104" y2="620" stroke="#60A5FA" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr-cyan)"/>
+      <line x1="274" y1="468" x2="274" y2="620" stroke="#6EE7B7" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr-green)"/>
+      <line x1="444" y1="468" x2="444" y2="620" stroke="#F472B6" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr-pink)"/>
+      <line x1="614" y1="468" x2="614" y2="620" stroke="#FBBF24" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr-yellow)"/>
+      <line x1="784" y1="468" x2="784" y2="620" stroke="#A78BFA" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr-gray)"/>
+      <line x1="954" y1="468" x2="954" y2="620" stroke="#FB923C" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr-orange)"/>
+      <line x1="1111" y1="468" x2="1111" y2="620" stroke="#34D399" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr-gray)"/>
+
+      <!-- ═══ BACKEND SYSTEMS ═══ -->
+      <!-- Jira -->
+      <rect x="30" y="630" width="148" height="60" rx="7" fill="#080C14" stroke="#2A4A7A" stroke-width="1"/>
+      <text x="104" y="652" font-family="IBM Plex Mono" font-size="9" font-weight="700" fill="#4A7AC0" text-anchor="middle">Jira REST API</text>
+      <text x="104" y="666" font-family="IBM Plex Mono" font-size="7.5" fill="#1A3A5A" text-anchor="middle">Cloud / Datacenter</text>
+      <text x="104" y="680" font-family="IBM Plex Mono" font-size="7" fill="#1A2A3A" text-anchor="middle">Webhooks enabled</text>
+
+      <!-- PostgreSQL + S3 -->
+      <rect x="200" y="630" width="148" height="60" rx="7" fill="#080C10" stroke="#1A4A2A" stroke-width="1"/>
+      <text x="274" y="652" font-family="IBM Plex Mono" font-size="9" font-weight="700" fill="#2A6A3A" text-anchor="middle">PostgreSQL + S3</text>
+      <text x="274" y="666" font-family="IBM Plex Mono" font-size="7.5" fill="#1A3A2A" text-anchor="middle">Evidence metadata</text>
+      <text x="274" y="680" font-family="IBM Plex Mono" font-size="7" fill="#1A2A1A" text-anchor="middle">File storage + index</text>
+
+      <!-- SMTP/Slack/Teams -->
+      <rect x="370" y="630" width="148" height="60" rx="7" fill="#0C080C" stroke="#3A1A2A" stroke-width="1"/>
+      <text x="444" y="652" font-family="IBM Plex Mono" font-size="9" font-weight="700" fill="#8A3A6A" text-anchor="middle">SMTP · Slack · Teams</text>
+      <text x="444" y="666" font-family="IBM Plex Mono" font-size="7.5" fill="#3A1A2A" text-anchor="middle">SendGrid / SMTP relay</text>
+      <text x="444" y="680" font-family="IBM Plex Mono" font-size="7" fill="#2A1A2A" text-anchor="middle">Webhooks configured</text>
+
+      <!-- Report Store -->
+      <rect x="540" y="630" width="148" height="60" rx="7" fill="#0C0C08" stroke="#3A3A1A" stroke-width="1"/>
+      <text x="614" y="652" font-family="IBM Plex Mono" font-size="9" font-weight="700" fill="#8A8A2A" text-anchor="middle">Report Store</text>
+      <text x="614" y="666" font-family="IBM Plex Mono" font-size="7.5" fill="#3A3A1A" text-anchor="middle">PDF/PPTX templates</text>
+      <text x="614" y="680" font-family="IBM Plex Mono" font-size="7" fill="#2A2A1A" text-anchor="middle">S3 bucket · versioned</text>
+
+      <!-- App Registry DB -->
+      <rect x="710" y="630" width="148" height="60" rx="7" fill="#0A080C" stroke="#2A1A3A" stroke-width="1"/>
+      <text x="784" y="652" font-family="IBM Plex Mono" font-size="9" font-weight="700" fill="#6A4A9A" text-anchor="middle">App Registry DB</text>
+      <text x="784" y="666" font-family="IBM Plex Mono" font-size="7.5" fill="#2A1A3A" text-anchor="middle">Apps · Teams · Scope</text>
+      <text x="784" y="680" font-family="IBM Plex Mono" font-size="7" fill="#1A0A2A" text-anchor="middle">PostgreSQL table</text>
+
+      <!-- Control Config -->
+      <rect x="880" y="630" width="148" height="60" rx="7" fill="#0C0A08" stroke="#3A2A0A" stroke-width="1"/>
+      <text x="954" y="652" font-family="IBM Plex Mono" font-size="9" font-weight="700" fill="#8A5A2A" text-anchor="middle">Control Config Store</text>
+      <text x="954" y="666" font-family="IBM Plex Mono" font-size="7.5" fill="#3A2A0A" text-anchor="middle">20 control definitions</text>
+      <text x="954" y="680" font-family="IBM Plex Mono" font-size="7" fill="#2A1A0A" text-anchor="middle">SLAs · criteria · state</text>
+
+      <!-- Audit Log DB -->
+      <rect x="1040" y="630" width="142" height="60" rx="7" fill="#080C0A" stroke="#0A3A1A" stroke-width="1"/>
+      <text x="1111" y="652" font-family="IBM Plex Mono" font-size="9" font-weight="700" fill="#2A7A4A" text-anchor="middle">Audit Log DB</text>
+      <text x="1111" y="666" font-family="IBM Plex Mono" font-size="7.5" fill="#0A3A1A" text-anchor="middle">Elasticsearch index</text>
+      <text x="1111" y="680" font-family="IBM Plex Mono" font-size="7" fill="#0A2A10" text-anchor="middle">Immutable · searchable</text>
+
+      <!-- ═══ VERTICAL LINES: UI → AGENTS ═══ -->
+      <!-- UI portals to agents (via API gateway) -->
+      <line x1="335" y1="112" x2="335" y2="168" stroke="#22D3EE" stroke-width="1.5" stroke-dasharray="3,3" marker-end="url(#arr-cyan)"/>
+      <line x1="565" y1="112" x2="565" y2="168" stroke="#6EE7B7" stroke-width="1.5" stroke-dasharray="3,3" marker-end="url(#arr-green)"/>
+      <line x1="1111" y1="112" x2="1111" y2="168" stroke="#FBBF24" stroke-width="1.5" stroke-dasharray="3,3" marker-end="url(#arr-yellow)"/>
+
+      <!-- Orchestrator → control agents -->
+      <line x1="230" y1="234" x2="268" y2="234" stroke="#60A5FA" stroke-width="1.5" marker-end="url(#arr-cyan)"/>
+
+      <!-- Agents → MCP servers (representative lines) -->
+      <!-- From Orchestrator down -->
+      <line x1="130" y1="290" x2="130" y2="340" stroke="#60A5FA" stroke-width="1" stroke-dasharray="3,3"/>
+      <line x1="130" y1="340" x2="614" y2="365" stroke="#60A5FA" stroke-width="1" stroke-dasharray="3,3" marker-end="url(#arr-cyan)"/>
+
+      <!-- From control agents down to MCP bus label -->
+      <line x1="400" y1="290" x2="400" y2="330" stroke="#6EE7B7" stroke-width="1" stroke-dasharray="3,3"/>
+      <line x1="400" y1="330" x2="104" y2="368" stroke="#6EE7B7" stroke-width="1" stroke-dasharray="3,3" marker-end="url(#arr-green)"/>
+      <line x1="550" y1="290" x2="550" y2="330" stroke="#6EE7B7" stroke-width="1" stroke-dasharray="3,3"/>
+      <line x1="550" y1="330" x2="274" y2="368" stroke="#6EE7B7" stroke-width="1" stroke-dasharray="3,3" marker-end="url(#arr-green)"/>
+      <line x1="700" y1="290" x2="700" y2="330" stroke="#6EE7B7" stroke-width="1" stroke-dasharray="3,3"/>
+      <line x1="700" y1="330" x2="444" y2="368" stroke="#6EE7B7" stroke-width="1" stroke-dasharray="3,3" marker-end="url(#arr-pink)"/>
+      <line x1="750" y1="290" x2="750" y2="330" stroke="#6EE7B7" stroke-width="1" stroke-dasharray="3,3"/>
+      <line x1="750" y1="330" x2="954" y2="368" stroke="#6EE7B7" stroke-width="1" stroke-dasharray="3,3" marker-end="url(#arr-orange)"/>
+
+      <!-- Evidence agent → evidence-mcp -->
+      <line x1="940" y1="290" x2="940" y2="330" stroke="#FB923C" stroke-width="1" stroke-dasharray="3,3"/>
+      <line x1="940" y1="330" x2="784" y2="368" stroke="#FB923C" stroke-width="1" stroke-dasharray="3,3" marker-end="url(#arr-gray)"/>
+
+      <!-- Report agent → report-mcp -->
+      <line x1="1111" y1="290" x2="1111" y2="368" stroke="#FBBF24" stroke-width="1.5" stroke-dasharray="3,3" marker-end="url(#arr-yellow)"/>
+
+      <!-- All agents → auth-audit-mcp (group arrow) -->
+      <path d="M 600 290 Q 600 320 1111 320 L 1111 368" stroke="#34D399" stroke-width="1" stroke-dasharray="3,3" fill="none" marker-end="url(#arr-gray)"/>
+
+      <!-- Label: MCP Client call -->
+      <rect x="320" y="315" width="110" height="16" rx="3" fill="#080C10"/>
+      <text x="375" y="326" font-family="IBM Plex Mono" font-size="7.5" fill="#2A6A4A" text-anchor="middle">MCP Client calls</text>
+
+      <!-- Kafka stream indicator -->
+      <rect x="440" y="560" width="320" height="24" rx="6" fill="#080C14" stroke="#1A3A5A" stroke-width="1"/>
+      <text x="600" y="576" font-family="IBM Plex Mono" font-size="8" fill="#2A5A8A" text-anchor="middle">Kafka / RabbitMQ event stream  ·  async agent coordination</text>
+
+      <!-- Label annotations -->
+      <rect x="30" y="496" width="90" height="14" rx="3" fill="#080C10"/>
+      <text x="75" y="506" font-family="IBM Plex Mono" font-size="7" fill="rgba(96,165,250,0.6)" text-anchor="middle">Jira REST API</text>
+
+      <rect x="200" y="496" width="90" height="14" rx="3" fill="#080C10"/>
+      <text x="245" y="506" font-family="IBM Plex Mono" font-size="7" fill="rgba(110,231,183,0.6)" text-anchor="middle">S3 + Postgres</text>
+
+      <rect x="370" y="496" width="90" height="14" rx="3" fill="#080C10"/>
+      <text x="415" y="506" font-family="IBM Plex Mono" font-size="7" fill="rgba(244,114,182,0.6)" text-anchor="middle">SMTP/Slack</text>
+
+      <rect x="540" y="496" width="90" height="14" rx="3" fill="#080C10"/>
+      <text x="585" y="506" font-family="IBM Plex Mono" font-size="7" fill="rgba(251,191,36,0.6)" text-anchor="middle">PDF templates</text>
+
+      <rect x="730" y="496" width="90" height="14" rx="3" fill="#080C10"/>
+      <text x="775" y="506" font-family="IBM Plex Mono" font-size="7" fill="rgba(167,139,250,0.6)" text-anchor="middle">App DB</text>
+
+      <rect x="900" y="496" width="90" height="14" rx="3" fill="#080C10"/>
+      <text x="945" y="506" font-family="IBM Plex Mono" font-size="7" fill="rgba(251,146,60,0.6)" text-anchor="middle">Config Store</text>
+
+      <rect x="1060" y="496" width="90" height="14" rx="3" fill="#080C10"/>
+      <text x="1105" y="506" font-family="IBM Plex Mono" font-size="7" fill="rgba(52,211,153,0.6)" text-anchor="middle">Elasticsearch</text>
+
+      <!-- Title watermark -->
+      <text x="600" y="795" font-family="IBM Plex Mono" font-size="9" fill="#1A2A3A" text-anchor="middle" letter-spacing="3">AGENTIC AI SECURITY CONTROLS PLATFORM · MCP ARCHITECTURE · v1.0 · 2026</text>
+    </svg>
+  </div>
+
+  <!-- ============ DIAGRAM 2: AGENT WORKFLOW ============ -->
+  <div class="diagram" id="d-flow">
+    <div class="flow-diagram">
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#3A6080; margin-bottom:20px; letter-spacing:1px;">CONTROL LIFECYCLE — SWIMLANE FLOW DIAGRAM</div>
+
+      <div class="swimlane-wrap">
+        <div class="lane-labels">
+          <div class="lane-label" style="color:#A78BFA; min-height:80px;">CIO</div>
+          <div class="lane-label" style="color:#22D3EE; min-height:90px;">CENTRAL LEAD</div>
+          <div class="lane-label" style="color:#60A5FA; min-height:90px;">ORCHESTRATOR</div>
+          <div class="lane-label" style="color:#6EE7B7; min-height:90px;">CONTROL AGENT ×20</div>
+          <div class="lane-label" style="color:#F472B6; min-height:90px;">NOTIFY-MCP</div>
+          <div class="lane-label" style="color:#FB923C; min-height:90px;">APP TEAM</div>
+          <div class="lane-label" style="color:#60A5FA; min-height:90px;">JIRA-MCP</div>
+          <div class="lane-label" style="color:#6EE7B7; min-height:90px;">EVIDENCE-MCP</div>
+          <div class="lane-label" style="color:#FBBF24; min-height:80px;">REPORT-MCP</div>
+          <div class="lane-label" style="color:#34D399; min-height:80px;">AUTH-AUDIT-MCP</div>
+        </div>
+
+        <div class="lane-content">
+          <!-- Row 1: CIO -->
+          <div class="lane-row" style="min-height:80px;">
+            <div class="fnode fnode-sm" style="background:rgba(167,139,250,0.1);border-color:rgba(167,139,250,0.4);color:#A78BFA;">Approve Cycle Start</div>
+            <div class="farrow"><div class="farrow-line" style="background:rgba(167,139,250,0.3); color:rgba(167,139,250,0.6);"></div></div>
+            <div style="flex:5; display:flex; align-items:center; padding-left:8px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:#2A4A6A;">— — — — — — — — — — — — — — — — — — — → </span>
+              <div class="fnode fnode-sm" style="background:rgba(167,139,250,0.1);border-color:rgba(167,139,250,0.4);color:#A78BFA;margin-left:8px;">View CIO Dashboard + Monthly Report</div>
+            </div>
+          </div>
+
+          <!-- Row 2: Central Lead -->
+          <div class="lane-row" style="min-height:90px;">
+            <div class="fnode fnode-sm" style="background:rgba(34,211,238,0.08);border-color:rgba(34,211,238,0.3);color:#22D3EE;">Configure Scope + Apps</div>
+            <div class="farrow" style="min-width:20px;"><div class="farrow-line" style="background:rgba(34,211,238,0.3);color:rgba(34,211,238,0.6);"></div></div>
+            <div class="fnode fnode-sm" style="background:rgba(34,211,238,0.08);border-color:rgba(34,211,238,0.3);color:#22D3EE;">Review Evidence Queue</div>
+            <div class="farrow" style="min-width:20px;"><div class="farrow-line" style="background:rgba(34,211,238,0.3);color:rgba(34,211,238,0.6);"></div></div>
+            <div class="fnode fnode-sm" style="background:rgba(34,211,238,0.1);border-color:rgba(34,211,238,0.4);color:#22D3EE;">Approve / Reject</div>
+            <div class="farrow" style="min-width:20px;"><div class="farrow-line" style="background:rgba(34,211,238,0.3);color:rgba(34,211,238,0.6);"></div></div>
+            <div class="fnode fnode-sm" style="background:rgba(34,211,238,0.1);border-color:rgba(34,211,238,0.4);color:#22D3EE;">Collate All 20 Controls</div>
+          </div>
+
+          <!-- Row 3: Orchestrator -->
+          <div class="lane-row" style="min-height:90px;">
+            <div class="fnode fnode-sm" style="background:rgba(96,165,250,0.08);border-color:rgba(96,165,250,0.3);color:#60A5FA;">Receives Cycle Signal</div>
+            <div class="farrow" style="min-width:20px;"><div class="farrow-line" style="background:rgba(96,165,250,0.3);color:rgba(96,165,250,0.6);"></div></div>
+            <div class="fnode fnode-sm" style="background:rgba(96,165,250,0.08);border-color:rgba(96,165,250,0.3);color:#60A5FA;">Spins up 20 Agents</div>
+            <div class="farrow" style="min-width:20px;"><div class="farrow-line" style="background:rgba(96,165,250,0.3);color:rgba(96,165,250,0.6);"></div></div>
+            <div class="fnode fnode-sm" style="background:rgba(96,165,250,0.08);border-color:rgba(96,165,250,0.3);color:#60A5FA;">Monitors · Escalates Stalls</div>
+            <div class="farrow" style="min-width:20px;"><div class="farrow-line" style="background:rgba(96,165,250,0.3);color:rgba(96,165,250,0.6);"></div></div>
+            <div class="fnode fnode-sm" style="background:rgba(96,165,250,0.1);border-color:rgba(96,165,250,0.4);color:#60A5FA;">Pushes Status → CIO Layer</div>
+          </div>
+
+          <!-- Row 4: Control Agent -->
+          <div class="lane-row" style="min-height:90px;">
+            <div class="fnode fnode-sm" style="background:rgba(110,231,183,0.08);border-color:rgba(110,231,183,0.3);color:#6EE7B7;">get_control_definition</div>
+            <div class="farrow" style="min-width:12px;"><div class="farrow-line" style="background:rgba(110,231,183,0.3);color:rgba(110,231,183,0.5);"></div></div>
+            <div class="fnode fnode-sm" style="background:rgba(110,231,183,0.08);border-color:rgba(110,231,183,0.3);color:#6EE7B7;">get_apps_in_scope</div>
+            <div class="farrow" style="min-width:12px;"><div class="farrow-line" style="background:rgba(110,231,183,0.3);color:rgba(110,231,183,0.5);"></div></div>
+            <div class="fnode fnode-sm" style="background:rgba(110,231,183,0.08);border-color:rgba(110,231,183,0.3);color:#6EE7B7;">bulk_create_tickets</div>
+            <div class="farrow" style="min-width:12px;"><div class="farrow-line" style="background:rgba(110,231,183,0.3);color:rgba(110,231,183,0.5);"></div></div>
+            <div class="fnode fnode-sm" style="background:rgba(110,231,183,0.08);border-color:rgba(110,231,183,0.3);color:#6EE7B7;">poll_ticket_status</div>
+            <div class="farrow" style="min-width:12px;"><div class="farrow-line" style="background:rgba(110,231,183,0.3);color:rgba(110,231,183,0.5);"></div></div>
+            <div class="fnode fnode-sm" style="background:rgba(110,231,183,0.1);border-color:rgba(110,231,183,0.4);color:#6EE7B7;">validate_evidence → update_status</div>
+          </div>
+
+          <!-- Row 5: Notify MCP -->
+          <div class="lane-row" style="min-height:90px;">
+            <div style="flex:1; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+              <div class="fnode fnode-sm" style="background:rgba(244,114,182,0.08);border-color:rgba(244,114,182,0.3);color:#F472B6;">send_email → app teams</div>
+              <div class="fnode fnode-sm" style="background:rgba(244,114,182,0.08);border-color:rgba(244,114,182,0.3);color:#F472B6;">send_reminder (T-7, T-3, T-1)</div>
+              <div class="fnode fnode-sm" style="background:rgba(244,114,182,0.08);border-color:rgba(244,114,182,0.3);color:#F472B6;">broadcast_to_role (escalation)</div>
+            </div>
+          </div>
+
+          <!-- Row 6: App Team -->
+          <div class="lane-row" style="min-height:90px;">
+            <div style="flex:1; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+              <div class="fnode fnode-sm" style="background:rgba(251,146,60,0.08);border-color:rgba(251,146,60,0.3);color:#FB923C;">Receives Email + Jira Ticket</div>
+              <div class="farrow" style="min-width:20px;"><div class="farrow-line" style="background:rgba(251,146,60,0.3);color:rgba(251,146,60,0.5);"></div></div>
+              <div class="fnode fnode-sm" style="background:rgba(251,146,60,0.08);border-color:rgba(251,146,60,0.3);color:#FB923C;">Updates Jira Status</div>
+              <div class="farrow" style="min-width:20px;"><div class="farrow-line" style="background:rgba(251,146,60,0.3);color:rgba(251,146,60,0.5);"></div></div>
+              <div class="fnode fnode-sm" style="background:rgba(251,146,60,0.1);border-color:rgba(251,146,60,0.4);color:#FB923C;">Uploads Evidence to Portal</div>
+            </div>
+          </div>
+
+          <!-- Row 7: Jira MCP -->
+          <div class="lane-row" style="min-height:90px;">
+            <div style="flex:1; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+              <div class="fnode fnode-sm" style="background:rgba(96,165,250,0.08);border-color:rgba(96,165,250,0.25);color:#60A5FA; font-size:8px;">create_ticket( )</div>
+              <div class="fnode fnode-sm" style="background:rgba(96,165,250,0.08);border-color:rgba(96,165,250,0.25);color:#60A5FA; font-size:8px;">webhook → status sync</div>
+              <div class="fnode fnode-sm" style="background:rgba(96,165,250,0.08);border-color:rgba(96,165,250,0.25);color:#60A5FA; font-size:8px;">get_ticket_status( )</div>
+              <div class="fnode fnode-sm" style="background:rgba(96,165,250,0.08);border-color:rgba(96,165,250,0.25);color:#60A5FA; font-size:8px;">attach_evidence( )</div>
+            </div>
+          </div>
+
+          <!-- Row 8: Evidence MCP -->
+          <div class="lane-row" style="min-height:90px;">
+            <div style="flex:1; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+              <div class="fnode fnode-sm" style="background:rgba(110,231,183,0.08);border-color:rgba(110,231,183,0.25);color:#6EE7B7; font-size:8px;">upload_evidence( )</div>
+              <div class="fnode fnode-sm" style="background:rgba(110,231,183,0.08);border-color:rgba(110,231,183,0.25);color:#6EE7B7; font-size:8px;">validate_evidence( ) → LLM</div>
+              <div class="fnode fnode-sm" style="background:rgba(110,231,183,0.08);border-color:rgba(110,231,183,0.25);color:#6EE7B7; font-size:8px;">list_missing_evidence( )</div>
+              <div class="fnode fnode-sm" style="background:rgba(110,231,183,0.1);border-color:rgba(110,231,183,0.35);color:#6EE7B7; font-size:8px;">mark_approved( )</div>
+            </div>
+          </div>
+
+          <!-- Row 9: Report MCP -->
+          <div class="lane-row" style="min-height:80px; border-bottom:none;">
+            <div style="flex:5;"></div>
+            <div class="fnode fnode-sm" style="background:rgba(251,191,36,0.08);border-color:rgba(251,191,36,0.25);color:#FBBF24; font-size:8px;">generate_cio_report( )</div>
+            <div class="farrow" style="min-width:12px;"><div class="farrow-line" style="background:rgba(251,191,36,0.3);color:rgba(251,191,36,0.5);"></div></div>
+            <div class="fnode fnode-sm" style="background:rgba(251,191,36,0.08);border-color:rgba(251,191,36,0.25);color:#FBBF24; font-size:8px;">export_report( ) → PDF</div>
+          </div>
+
+          <!-- Row 10: Auth Audit MCP -->
+          <div class="lane-row" style="min-height:80px; border-bottom:none;">
+            <div style="flex:1; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+              <div class="fnode fnode-sm" style="background:rgba(52,211,153,0.08);border-color:rgba(52,211,153,0.25);color:#34D399; font-size:8px;">check_permission( ) — every call</div>
+              <div class="fnode fnode-sm" style="background:rgba(52,211,153,0.08);border-color:rgba(52,211,153,0.25);color:#34D399; font-size:8px;">log_agent_action( ) — every call</div>
+              <div class="fnode fnode-sm" style="background:rgba(52,211,153,0.08);border-color:rgba(52,211,153,0.25);color:#34D399; font-size:8px;">immutable audit trail</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Decision boxes -->
+      <div style="margin-top:24px; display:grid; grid-template-columns:repeat(3,1fr); gap:12px;">
+        <div style="background:#0A1510;border:1px solid #1A3A2A;border-radius:8px;padding:14px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:700;color:#FBBF24;margin-bottom:6px;">⚠ SLA BREACH LOGIC</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#2A5A3A;line-height:1.7;">T-7: send_reminder( )<br>T-3: send_reminder( ) urgent<br>T-0: escalate → Central Lead<br>T+1: flag RED on CIO dashboard</div>
+        </div>
+        <div style="background:#0A1010;border:1px solid #1A2A3A;border-radius:8px;padding:14px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:700;color:#FB923C;margin-bottom:6px;">🔁 EVIDENCE REJECTION</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#2A3A5A;line-height:1.7;">validate_evidence( ) → invalid<br>log_agent_action( ) rejection<br>send_email( ) re-request<br>add_comment( ) to Jira ticket</div>
+        </div>
+        <div style="background:#0A1208;border:1px solid #1A3A10;border-radius:8px;padding:14px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:700;color:#6EE7B7;margin-bottom:6px;">✅ CONTROL COMPLETE</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#2A4A2A;line-height:1.7;">mark_evidence_approved( )<br>update_control_status( ) GREEN<br>log_agent_action( ) complete<br>orchestrator aggregates → CIO</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ DIAGRAM 3: MCP DETAIL ============ -->
+  <div class="diagram" id="d-mcp">
+    <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#3A6080; margin-bottom:20px; letter-spacing:1px;">MCP SERVER DETAIL — TOOLS, CALLERS, BACKENDS</div>
+
+    <!-- Each MCP server as a detailed card -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px;">
+
+      <!-- jira-mcp -->
+      <div style="border-radius:12px; overflow:hidden; border:1px solid rgba(96,165,250,0.3); background:#080C14;">
+        <div style="background:rgba(96,165,250,0.1); padding:14px 18px; border-bottom:1px solid rgba(96,165,250,0.2); display:flex; align-items:center; gap:10px;">
+          <div style="width:32px;height:32px;background:rgba(96,165,250,0.2);border:1px solid rgba(96,165,250,0.4);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:16px;">🎫</div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;color:#60A5FA;">jira-mcp</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#2A5A8A;margin-top:2px;">Jira REST API  ·  7 tools</div>
+          </div>
+          <div style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#2A4A6A;text-align:right;">Called by:<br><span style="color:#60A5FA;">All Control Agents</span></div>
+        </div>
+        <div style="padding:12px 18px;">
+          <div style="display:flex;flex-direction:column;gap:5px;">
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:rgba(96,165,250,0.05);border-radius:5px;border-left:2px solid #60A5FA;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#60A5FA;min-width:150px;">create_ticket( )</span>
+              <span style="font-size:9px;color:#2A5A8A;">Create issue with control template + assignee</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:rgba(96,165,250,0.05);border-radius:5px;border-left:2px solid #60A5FA;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#60A5FA;min-width:150px;">bulk_create_tickets( )</span>
+              <span style="font-size:9px;color:#2A5A8A;">One ticket per in-scope app for a control</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:rgba(96,165,250,0.05);border-radius:5px;border-left:2px solid #60A5FA;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#60A5FA;min-width:150px;">get_ticket_status( )</span>
+              <span style="font-size:9px;color:#2A5A8A;">Poll current status + last comment</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:rgba(96,165,250,0.05);border-radius:5px;border-left:2px solid #60A5FA;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#60A5FA;min-width:150px;">attach_evidence( )</span>
+              <span style="font-size:9px;color:#2A5A8A;">Upload file attachment to Jira issue</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:rgba(96,165,250,0.05);border-radius:5px;border-left:2px solid #60A5FA;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#60A5FA;min-width:150px;">add_comment( )</span>
+              <span style="font-size:9px;color:#2A5A8A;">AI-drafted comment / reminder on issue</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:rgba(96,165,250,0.05);border-radius:5px;border-left:2px solid #60A5FA;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#60A5FA;min-width:150px;">update_ticket_status( )</span>
+              <span style="font-size:9px;color:#2A5A8A;">Transition: Open → In Progress → Done</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:rgba(96,165,250,0.05);border-radius:5px;border-left:2px solid #60A5FA;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#60A5FA;min-width:150px;">search_tickets( )</span>
+              <span style="font-size:9px;color:#2A5A8A;">JQL query by control / app / status</span>
+            </div>
+          </div>
+          <div style="margin-top:8px;padding:6px 8px;background:#040810;border-radius:5px;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#1A3A5A;">Backend: Jira REST API · token auth · webhook listener on port 8001</div>
+        </div>
+      </div>
+
+      <!-- evidence-mcp -->
+      <div style="border-radius:12px; overflow:hidden; border:1px solid rgba(110,231,183,0.3); background:#080C10;">
+        <div style="background:rgba(110,231,183,0.07); padding:14px 18px; border-bottom:1px solid rgba(110,231,183,0.2); display:flex; align-items:center; gap:10px;">
+          <div style="width:32px;height:32px;background:rgba(110,231,183,0.15);border:1px solid rgba(110,231,183,0.3);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:16px;">📋</div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;color:#6EE7B7;">evidence-mcp</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#1A5A3A;margin-top:2px;">S3 + PostgreSQL + LLM  ·  6 tools</div>
+          </div>
+          <div style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#1A4A2A;text-align:right;">Called by:<br><span style="color:#6EE7B7;">Control · Evidence Agents</span></div>
+        </div>
+        <div style="padding:12px 18px;">
+          <div style="display:flex;flex-direction:column;gap:5px;">
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:rgba(110,231,183,0.05);border-radius:5px;border-left:2px solid #6EE7B7;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#6EE7B7;min-width:150px;">upload_evidence( )</span>
+              <span style="font-size:9px;color:#1A5A3A;">Store file to S3, index metadata in PG</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:rgba(110,231,183,0.05);border-radius:5px;border-left:2px solid #6EE7B7;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#6EE7B7;min-width:150px;">validate_evidence( )</span>
+              <span style="font-size:9px;color:#1A5A3A;">LLM checks quality vs control criteria</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:rgba(110,231,183,0.05);border-radius:5px;border-left:2px solid #6EE7B7;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#6EE7B7;min-width:150px;">list_missing_evidence( )</span>
+              <span style="font-size:9px;color:#1A5A3A;">Which apps haven't submitted yet?</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:rgba(110,231,183,0.05);border-radius:5px;border-left:2px solid #6EE7B7;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#6EE7B7;min-width:150px;">mark_evidence_approved( )</span>
+              <span style="font-size:9px;color:#1A5A3A;">Central lead approves → status update</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:rgba(110,231,183,0.05);border-radius:5px;border-left:2px solid #6EE7B7;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#6EE7B7;min-width:150px;">get_evidence( )</span>
+              <span style="font-size:9px;color:#1A5A3A;">Retrieve for control + app + cycle</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:rgba(110,231,183,0.05);border-radius:5px;border-left:2px solid #6EE7B7;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#6EE7B7;min-width:150px;">get_evidence_summary( )</span>
+              <span style="font-size:9px;color:#1A5A3A;">All apps status for one control</span>
+            </div>
+          </div>
+          <div style="margin-top:8px;padding:6px 8px;background:#040810;border-radius:5px;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#1A3A2A;">Backend: AWS S3 + PostgreSQL + Claude Haiku for validation · port 8002</div>
+        </div>
+      </div>
+
+      <!-- notify-mcp -->
+      <div style="border-radius:12px; overflow:hidden; border:1px solid rgba(244,114,182,0.3); background:#0C0810;">
+        <div style="background:rgba(244,114,182,0.07); padding:14px 18px; border-bottom:1px solid rgba(244,114,182,0.2); display:flex; align-items:center; gap:10px;">
+          <div style="width:32px;height:32px;background:rgba(244,114,182,0.15);border:1px solid rgba(244,114,182,0.3);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:16px;">📧</div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;color:#F472B6;">notify-mcp</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#5A1A3A;margin-top:2px;">SMTP · Slack · Teams  ·  6 tools</div>
+          </div>
+          <div style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#4A1A3A;text-align:right;">Called by:<br><span style="color:#F472B6;">All Agents</span></div>
+        </div>
+        <div style="padding:12px 18px;">
+          <div style="display:flex;flex-direction:column;gap:5px;">
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:rgba(244,114,182,0.05);border-radius:5px;border-left:2px solid #F472B6;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#F472B6;min-width:150px;">send_email( )</span><span style="font-size:9px;color:#5A1A3A;">HTML email via SendGrid/SMTP</span></div>
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:rgba(244,114,182,0.05);border-radius:5px;border-left:2px solid #F472B6;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#F472B6;min-width:150px;">send_slack_message( )</span><span style="font-size:9px;color:#5A1A3A;">Channel or DM via Slack API</span></div>
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:rgba(244,114,182,0.05);border-radius:5px;border-left:2px solid #F472B6;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#F472B6;min-width:150px;">send_teams_message( )</span><span style="font-size:9px;color:#5A1A3A;">MS Teams channel webhook</span></div>
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:rgba(244,114,182,0.05);border-radius:5px;border-left:2px solid #F472B6;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#F472B6;min-width:150px;">send_reminder( )</span><span style="font-size:9px;color:#5A1A3A;">Scheduled T-7, T-3, T-1 sequence</span></div>
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:rgba(244,114,182,0.05);border-radius:5px;border-left:2px solid #F472B6;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#F472B6;min-width:150px;">broadcast_to_role( )</span><span style="font-size:9px;color:#5A1A3A;">All users with a given role</span></div>
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:rgba(244,114,182,0.05);border-radius:5px;border-left:2px solid #F472B6;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#F472B6;min-width:150px;">log_notification( )</span><span style="font-size:9px;color:#5A1A3A;">Audit record: who got what when</span></div>
+          </div>
+          <div style="margin-top:8px;padding:6px 8px;background:#040810;border-radius:5px;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#2A1A2A;">Backend: SendGrid + Slack API + Teams webhooks · port 8003</div>
+        </div>
+      </div>
+
+      <!-- report-mcp -->
+      <div style="border-radius:12px; overflow:hidden; border:1px solid rgba(251,191,36,0.3); background:#0C0C08;">
+        <div style="background:rgba(251,191,36,0.07); padding:14px 18px; border-bottom:1px solid rgba(251,191,36,0.2); display:flex; align-items:center; gap:10px;">
+          <div style="width:32px;height:32px;background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.3);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:16px;">📊</div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;color:#FBBF24;">report-mcp</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#5A4A0A;margin-top:2px;">Report engine + LLM  ·  6 tools</div>
+          </div>
+          <div style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#4A3A0A;text-align:right;">Called by:<br><span style="color:#FBBF24;">Report Agent · Orchestrator</span></div>
+        </div>
+        <div style="padding:12px 18px;">
+          <div style="display:flex;flex-direction:column;gap:5px;">
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:rgba(251,191,36,0.05);border-radius:5px;border-left:2px solid #FBBF24;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#FBBF24;min-width:160px;">generate_cio_report( )</span><span style="font-size:9px;color:#5A4A0A;">Monthly/quarterly executive PDF</span></div>
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:rgba(251,191,36,0.05);border-radius:5px;border-left:2px solid #FBBF24;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#FBBF24;min-width:160px;">get_compliance_heatmap( )</span><span style="font-size:9px;color:#5A4A0A;">20-control status heatmap data</span></div>
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:rgba(251,191,36,0.05);border-radius:5px;border-left:2px solid #FBBF24;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#FBBF24;min-width:160px;">draft_executive_summary( )</span><span style="font-size:9px;color:#5A4A0A;">LLM writes plain-English summary</span></div>
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:rgba(251,191,36,0.05);border-radius:5px;border-left:2px solid #FBBF24;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#FBBF24;min-width:160px;">get_trend_data( )</span><span style="font-size:9px;color:#5A4A0A;">Compliance % over time per control</span></div>
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:rgba(251,191,36,0.05);border-radius:5px;border-left:2px solid #FBBF24;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#FBBF24;min-width:160px;">generate_control_report( )</span><span style="font-size:9px;color:#5A4A0A;">Single control status report</span></div>
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:rgba(251,191,36,0.05);border-radius:5px;border-left:2px solid #FBBF24;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#FBBF24;min-width:160px;">export_report( )</span><span style="font-size:9px;color:#5A4A0A;">Output PDF / PPTX / CSV download</span></div>
+          </div>
+          <div style="margin-top:8px;padding:6px 8px;background:#040810;border-radius:5px;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#2A2A0A;">Backend: Report templates (S3) + Claude Sonnet + PostgreSQL · port 8004</div>
+        </div>
+      </div>
+
+      <!-- app-registry-mcp -->
+      <div style="border-radius:12px; overflow:hidden; border:1px solid rgba(167,139,250,0.3); background:#0A0810;">
+        <div style="background:rgba(167,139,250,0.07); padding:14px 18px; border-bottom:1px solid rgba(167,139,250,0.2); display:flex; align-items:center; gap:10px;">
+          <div style="width:32px;height:32px;background:rgba(167,139,250,0.15);border:1px solid rgba(167,139,250,0.3);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:16px;">🗂️</div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;color:#A78BFA;">app-registry-mcp</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#3A2A5A;margin-top:2px;">App + Team Registry  ·  5 tools</div>
+          </div>
+          <div style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#2A1A4A;text-align:right;">Called by:<br><span style="color:#A78BFA;">All Agents</span></div>
+        </div>
+        <div style="padding:12px 18px;">
+          <div style="display:flex;flex-direction:column;gap:5px;">
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:rgba(167,139,250,0.05);border-radius:5px;border-left:2px solid #A78BFA;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#A78BFA;min-width:160px;">get_apps_in_scope( )</span><span style="font-size:9px;color:#3A2A5A;">All apps for a given control</span></div>
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:rgba(167,139,250,0.05);border-radius:5px;border-left:2px solid #A78BFA;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#A78BFA;min-width:160px;">get_app_team_contacts( )</span><span style="font-size:9px;color:#3A2A5A;">Email, Slack handle, manager</span></div>
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:rgba(167,139,250,0.05);border-radius:5px;border-left:2px solid #A78BFA;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#A78BFA;min-width:160px;">get_app_metadata( )</span><span style="font-size:9px;color:#3A2A5A;">Tier, criticality, tech stack</span></div>
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:rgba(167,139,250,0.05);border-radius:5px;border-left:2px solid #A78BFA;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#A78BFA;min-width:160px;">get_app_compliance_history( )</span><span style="font-size:9px;color:#3A2A5A;">Prior cycle compliance records</span></div>
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:rgba(167,139,250,0.05);border-radius:5px;border-left:2px solid #A78BFA;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#A78BFA;min-width:160px;">update_app_control_status( )</span><span style="font-size:9px;color:#3A2A5A;">Record compliance result for cycle</span></div>
+          </div>
+          <div style="margin-top:8px;padding:6px 8px;background:#040810;border-radius:5px;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#1A0A2A;">Backend: PostgreSQL app registry table · CMDB integration · port 8005</div>
+        </div>
+      </div>
+
+      <!-- auth-audit-mcp -->
+      <div style="border-radius:12px; overflow:hidden; border:1px solid rgba(52,211,153,0.3); background:#080C0A;">
+        <div style="background:rgba(52,211,153,0.07); padding:14px 18px; border-bottom:1px solid rgba(52,211,153,0.2); display:flex; align-items:center; gap:10px;">
+          <div style="width:32px;height:32px;background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.3);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:16px;">🔐</div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;color:#34D399;">auth-audit-mcp</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#0A3A1A;margin-top:2px;">RBAC + Audit Log  ·  5 tools  ·  called on every action</div>
+          </div>
+          <div style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#0A3A1A;text-align:right;">Called by:<br><span style="color:#34D399;">Every Agent + UI</span></div>
+        </div>
+        <div style="padding:12px 18px;">
+          <div style="display:flex;flex-direction:column;gap:5px;">
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:rgba(52,211,153,0.05);border-radius:5px;border-left:2px solid #34D399;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#34D399;min-width:160px;">check_permission( )</span><span style="font-size:9px;color:#0A3A1A;">RBAC check before every action</span></div>
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:rgba(52,211,153,0.05);border-radius:5px;border-left:2px solid #34D399;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#34D399;min-width:160px;">get_user_context( )</span><span style="font-size:9px;color:#0A3A1A;">Decode JWT → role, scope, permissions</span></div>
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:rgba(52,211,153,0.05);border-radius:5px;border-left:2px solid #34D399;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#34D399;min-width:160px;">log_agent_action( )</span><span style="font-size:9px;color:#0A3A1A;">Immutable log: who · what · when · result</span></div>
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:rgba(52,211,153,0.05);border-radius:5px;border-left:2px solid #34D399;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#34D399;min-width:160px;">get_audit_trail( )</span><span style="font-size:9px;color:#0A3A1A;">Query all actions for control/app/user</span></div>
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:rgba(52,211,153,0.05);border-radius:5px;border-left:2px solid #34D399;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#34D399;min-width:160px;">verify_data_access( )</span><span style="font-size:9px;color:#0A3A1A;">Row-level security before data return</span></div>
+          </div>
+          <div style="margin-top:8px;padding:6px 8px;background:#040810;border-radius:5px;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#0A2A10;">Backend: Elasticsearch (audit) + Redis (session) + JWT validator · port 8007</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- /canvas -->
+
+<!-- Legend -->
+<div class="legend">
+  <span class="legend-title">LEGEND</span>
+  <div class="legend-item"><div class="legend-dot" style="background:#A78BFA;"></div> CIO / Portal Layer</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#60A5FA;"></div> AI Agent Layer</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#22D3EE;"></div> MCP Server Bus</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#FBBF24;"></div> Backend Systems</div>
+  <div class="legend-item"><div class="legend-line" style="background:#6EE7B7;"></div> MCP tool call (sync)</div>
+  <div class="legend-item"><div class="legend-line" style="background:#6EE7B7; border-top: 1px dashed #6EE7B7; height:0;"></div> Async / event-driven</div>
+  <div style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#1A3A5A;">FastMCP · Python · LangGraph · Kubernetes</div>
+</div>
+
+<script>
+function showDiagram(id) {
+  document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.diagram').forEach(d => d.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('d-' + id).classList.add('active');
+}
+</script>
+</body>
+</html>
