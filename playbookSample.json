@@ -1,0 +1,81 @@
+{
+  "playbook_metadata": {
+    "playbook_id": "string",
+    "version": "string",
+    "control_id": "string",
+    "control_name": "string",
+    "description": "string"
+  },
+  "tool_registry": [
+    {
+      "name": "string",
+      "description": "detailed capability description for the LLM",
+      "parameters": { "type": "object" }
+    }
+  ],
+  "workflow": [
+    {
+      "step_id": "string",
+      "type": "system_task | user_task",
+      "tools": [
+        {
+          "tool_name": "string",
+          "arguments": { "key": "value_or_variable" }
+        }
+      ],
+      "on_success": "next_step_id",
+      "on_failure": "error_step_id"
+    }
+  ]
+}
+
+playbook_id: "CTRL-012-VENDOR-PAYMENT-APPROVAL"
+version: "1.0.0"
+control_id: "CTRL-012"
+control_name: "Vendor Payment Approval"
+description: >
+  Ensures all vendor payment requests are validated, routed for appropriate
+  approval based on amount thresholds, posted to the ERP system, and fully
+  audited. Applies to all outgoing payments to registered vendors.
+
+# Supported Tools available to the Agent for THIS playbook
+tool_registry:
+  - name: "erp_vendor_lookup"
+    description: "Queries the ERP to verify if a vendor is registered and active."
+  - name: "fraud_score_check"
+    description: "Analyzes invoice patterns to provide a risk score (0-100)."
+  - name: "slack_approver"
+    description: "Sends an interactive approval card to a specific manager."
+  - name: "erp_payment_poster"
+    description: "Finalizes and posts the approved invoice to the General Ledger."
+
+workflow:
+  - step_id: "initial_validation"
+    type: "system_task"
+    description: "Verify vendor status and check for fraud risk simultaneously."
+    tools:
+      - tool_name: "erp_vendor_lookup"
+        arguments: { vendor_id: "{{input.vendor_id}}" }
+      - tool_name: "fraud_score_check"
+        arguments: { invoice_amount: "{{input.amount}}", vendor_id: "{{input.vendor_id}}" }
+    on_success: "determine_threshold"
+    on_failure: "reject_payment"
+
+  - step_id: "human_approval"
+    type: "user_task"
+    description: "High-value payments require manual CFO sign-off."
+    tools:
+      - tool_name: "slack_approver"
+        arguments: 
+          role: "CFO"
+          context: "Payment of {{input.amount}} to {{erp_vendor_lookup.name}}"
+    on_success: "post_to_erp"
+    on_failure: "reject_payment"
+
+  - step_id: "post_to_erp"
+    type: "system_task"
+    description: "Final record keeping."
+    tools:
+      - tool_name: "erp_payment_poster"
+        arguments: { invoice_id: "{{input.invoice_id}}" }
+    on_success: "end"
